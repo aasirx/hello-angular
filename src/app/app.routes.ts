@@ -5,7 +5,7 @@ import {TodoComponent} from './todo/todo.component'
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: 'login',
+    redirectTo: 'todo',
     pathMatch: 'full'
   },
   {
