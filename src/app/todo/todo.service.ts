@@ -9,13 +9,9 @@ import { Todo } from './todo.model';
 @Injectable()
 export class TodoService {
 
-  //定义你的假WebAPI地址，这个定义成什么都无所谓
-  //只要确保是无法访问的地址就好
-  private api_url = 'api/todos';
+  private api_url = 'http://localhost:3000/todos';
   private headers = new Headers({'Content-Type': 'application/json'});
-
   constructor(private http: Http) { }
-
   // POST /todos
   addTodo(desc:string): Promise<Todo> {
     let todo = {
@@ -26,21 +22,23 @@ export class TodoService {
     return this.http
             .post(this.api_url, JSON.stringify(todo), {headers: this.headers})
             .toPromise()
-            .then(res => res.json().data as Todo)
+            .then(res => res.json() as Todo)
             .catch(this.handleError);
   }
-  // PUT /todos/:id
+  // It was PUT /todos/:id before
+  // But we will use PATCH /todos/:id instead
+  // Because we don't want to waste the bytes those don't change
   toggleTodo(todo: Todo): Promise<Todo> {
     const url = `${this.api_url}/${todo.id}`;
-    console.log(url);
     let updatedTodo = Object.assign({}, todo, {completed: !todo.completed});
     return this.http
-            .put(url, JSON.stringify(updatedTodo), {headers: this.headers})
+            .patch(url, JSON.stringify({completed: !todo.completed}), {headers: this.headers})
             .toPromise()
             .then(() => updatedTodo)
             .catch(this.handleError);
   }
-   deleteTodoById(id: string): Promise<void> {
+  // DELETE /todos/:id
+  deleteTodoById(id: string): Promise<void> {
     const url = `${this.api_url}/${id}`;
     return this.http
             .delete(url, {headers: this.headers})
@@ -48,16 +46,32 @@ export class TodoService {
             .then(() => null)
             .catch(this.handleError);
   }
-    // GET /todos
+  // GET /todos
   getTodos(): Promise<Todo[]>{
     return this.http.get(this.api_url)
               .toPromise()
-              .then(res => res.json().data as Todo[])
+              .then(res => res.json() as Todo[])
               .catch(this.handleError);
   }
-
+  // GET /todos?completed=true/false
+  filterTodos(filter: string): Promise<Todo[]> {
+    switch(filter){
+      case 'ACTIVE': return this.http
+                        .get(`${this.api_url}?completed=false`)
+                        .toPromise()
+                        .then(res => res.json() as Todo[])
+                        .catch(this.handleError);
+      case 'COMPLETED': return this.http
+                          .get(`${this.api_url}?completed=true`)
+                          .toPromise()
+                          .then(res => res.json() as Todo[])
+                          .catch(this.handleError);
+      default:
+        return this.getTodos();
+    }
+  }
   private handleError(error: any): Promise<any> {
-    console.error('An error occurred', error); 
+    console.error('An error occurred', error);
     return Promise.reject(error.message || error);
   }
 }
